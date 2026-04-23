@@ -23,13 +23,16 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await response.json();
+    const raw = await response.text();
+    let data;
+    try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.message || 'Error de Supermemory' });
+      return res.status(response.status).json({ error: data.message || 'Error', raw });
     }
 
-    return res.status(200).json(data);
+    return res.status(200).json({ ok: true, data, raw });
+
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
