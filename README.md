@@ -1,0 +1,2 @@
+# pcv001-chat
+Chat con PROYECTO PCV001 CONFIGURACION guardado en SUPERMEMORY.AI
