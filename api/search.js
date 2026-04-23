@@ -23,15 +23,18 @@ export default async function handler(req, res) {
       })
     });
 
-    const raw = await response.text();
-    let data;
-    try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
+    const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.message || 'Error', raw });
+      return res.status(response.status).json({ error: data.message || data.error || 'Error de Supermemory' });
     }
 
-    return res.status(200).json({ ok: true, data, raw });
+    const results = (data.results || []).map(r => ({
+      title: r.title || '',
+      content: (r.chunks || []).map(c => c.content || '').filter(Boolean).join('\n\n')
+    })).filter(r => r.content);
+
+    return res.status(200).json({ results });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
