@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCV001 — Mi Asistente de Proyecto</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #181818;
+    --surface2: #222222;
+    --surface3: #2a2a2a;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f2f2f2;
+    --text2: #aaa;
+    --text3: #555;
+    --green: #3ecf8e;
+    --green-bg: rgba(62,207,142,0.10);
+    --green-border: rgba(62,207,142,0.28);
+    --purple: #a78bfa;
+    --purple-bg: rgba(167,139,250,0.10);
+    --purple-border: rgba(167,139,250,0.28);
+    --red: #f87171;
+    --user-bg: #1a1a2a;
+    --ai-bg: #0e1a12;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 18px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 14px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+    flex-shrink: 0;
+  }
+  .logo {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: var(--green-bg); border: 1px solid var(--green-border);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .hinfo { flex: 1; }
+  .hinfo h1 { font-size: 17px; font-weight: 600; color: var(--text); }
+  .hinfo p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .spill {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13px; color: var(--text2);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 14px;
+  }
+  .sdot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text3); transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .sdot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .sdot.err { background: var(--red); }
+
+  /* KEY BAR */
+  #key-bar {
+    padding: 10px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: center;
+    flex-shrink: 0;
+  }
+  #key-bar label { font-size: 14px; color: var(--text2); white-space: nowrap; }
+  #api-key {
+    flex: 1; background: var(--surface2);
+    border: 1px solid var(--border2); border-radius: 10px;
+    padding: 8px 14px; font-size: 14px; color: var(--text);
+    font-family: 'Courier New', monospace; outline: none;
+    transition: border-color 0.2s;
+  }
+  #api-key:focus { border-color: var(--green); }
+  #save-btn {
+    padding: 8px 18px; background: var(--green-bg);
+    border: 1px solid var(--green-border); border-radius: 10px;
+    color: var(--green); font-size: 14px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: opacity 0.2s;
+  }
+  #save-btn:hover { opacity: 0.75; }
+  #key-status { font-size: 13px; white-space: nowrap; color: var(--text3); }
+  #key-status.ok { color: var(--green); }
+
+  /* MESSAGES */
+  #messages {
+    flex: 1; overflow-y: auto; padding: 24px;
+    display: flex; flex-direction: column; gap: 18px;
+    scroll-behavior: smooth;
+  }
+  #messages::-webkit-scrollbar { width: 4px; }
+  #messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .msg { display: flex; gap: 12px; }
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; max-width: 70%; }
+  .msg.ai { align-self: flex-start; max-width: 94%; width: 100%; }
+
+  .avatar {
+    width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+  }
+  .avatar.ai { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .avatar.user { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+
+  .bubble {
+    padding: 16px 20px; border-radius: 16px;
+    font-size: 18px; line-height: 1.8;
+  }
+  .msg.user .bubble {
+    background: var(--user-bg);
+    border: 1px solid rgba(167,139,250,0.15);
+    border-top-right-radius: 4px;
+  }
+  .msg.ai .bubble {
+    background: var(--ai-bg);
+    border: 1px solid rgba(62,207,142,0.12);
+    border-top-left-radius: 4px;
+    width: 100%;
+  }
+
+  .wtag {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--green); margin-bottom: 8px;
+  }
+
+  /* FRAGMENTOS */
+  .frag {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 16px 18px; margin: 10px 0;
+    font-size: 17px; line-height: 1.75; color: var(--text);
+  }
+  .frag-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--green); margin-bottom: 8px;
+  }
+  .frag-source {
+    font-size: 12px; color: var(--text3); margin-top: 8px;
+    padding-top: 8px; border-top: 1px solid var(--border);
+  }
+
+  .no-results {
+    font-size: 17px; color: var(--text2); line-height: 1.7;
+    padding: 12px 0;
+  }
+
+  /* EMPTY STATE */
+  #empty {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    color: var(--text2); text-align: center; padding: 40px;
+  }
+  .eicon { font-size: 52px; }
+  #empty h2 { font-size: 22px; font-weight: 600; color: var(--text); }
+  #empty p { font-size: 17px; max-width: 420px; line-height: 1.7; color: var(--text2); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; margin-top: 8px; }
+  .chip {
+    font-size: 15px; padding: 10px 18px;
+    border: 1px solid var(--border2); border-radius: 999px;
+    background: var(--surface2); color: var(--text2);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .chip:hover { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+
+  /* TYPING */
+  .tdots span {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); margin: 0 3px; animation: bounce 1.2s infinite;
+  }
+  .tdots span:nth-child(2) { animation-delay: 0.2s; }
+  .tdots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%,80%,100% { transform: translateY(0); opacity: 0.3; }
+    40% { transform: translateY(-7px); opacity: 1; }
+  }
+
+  /* INPUT */
+  #input-area {
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex; gap: 10px; align-items: flex-end;
+    flex-shrink: 0;
+  }
+  #user-input {
+    flex: 1; background: var(--surface2);
+    border: 1px solid var(--border2); border-radius: 14px;
+    padding: 14px 18px; font-size: 18px; color: var(--text);
+    font-family: inherit; resize: none; outline: none;
+    line-height: 1.5; max-height: 150px; overflow-y: auto;
+    transition: border-color 0.2s;
+  }
+  #user-input:focus { border-color: var(--green); }
+  #user-input::placeholder { color: var(--text3); }
+
+  #clear-btn {
+    padding: 14px 16px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 14px;
+    color: var(--text2); font-size: 18px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  #clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+  #send-btn {
+    padding: 14px 28px; background: var(--green);
+    border: none; border-radius: 14px;
+    color: #000; font-size: 17px; font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  #send-btn:hover { opacity: 0.85; }
+  #send-btn:active { transform: scale(0.97); }
+  #send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  #toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #000; padding: 9px 20px;
+    border-radius: 999px; font-size: 14px; font-weight: 700;
+    z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🧠</div>
+  <div class="hinfo">
+    <h1>PCV001 — Mi Asistente de Proyecto</h1>
+    <p>Busca en tus 9 documentos · tag: pcv-001-configuracion</p>
+  </div>
+  <div class="spill">
+    <div class="sdot" id="sdot"></div>
+    <span id="stext">Sin conectar</span>
+  </div>
+</header>
+
+<div id="key-bar">
+  <label>🔑 API Key Supermemory:</label>
+  <input id="api-key" type="password" placeholder="Pega tu sm_xxxxxxxx aquí..." autocomplete="off" />
+  <button id="save-btn" onclick="saveKey()">Guardar</button>
+  <span id="key-status">sin guardar</span>
+</div>
+
+<div id="messages">
+  <div id="empty">
+    <div class="eicon">🧠</div>
+    <h2>Tu cerebro de PCV001</h2>
+    <p>Pega tu API key arriba y pregunta cualquier cosa sobre tu proyecto. Busco en tus 9 documentos y te muestro los resultados con letras grandes.</p>
+    <div class="chips">
+      <div class="chip" onclick="useChip(this)">¿En qué punto quedé con el KIT SaaS?</div>
+      <div class="chip" onclick="useChip(this)">¿Cómo resolví el error de openById?</div>
+      <div class="chip" onclick="useChip(this)">¿Qué partes no debo tocar del sistema?</div>
+      <div class="chip" onclick="useChip(this)">Dame el resumen ejecutivo de PCV001</div>
+      <div class="chip" onclick="useChip(this)">¿Cuáles son las columnas de Inventario_Drive?</div>
+      <div class="chip" onclick="useChip(this)">¿Qué errores tuve en la conciliación BBVA?</div>
+    </div>
+  </div>
+</div>
+
+<div id="input-area">
+  <textarea id="user-input" rows="1"
+    placeholder="Escribe tu pregunta sobre PCV001... (Enter para enviar)"
+    onkeydown="handleKey(event)"
+    oninput="autoResize(this)"></textarea>
+  <button id="clear-btn" onclick="clearChat()" title="Nueva conversación">🗑</button>
+  <button id="send-btn" onclick="sendMsg()">Buscar ↑</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let savedKey = localStorage.getItem('pcv001_sm_key') || '';
+
+window.onload = () => {
+  if (savedKey) {
+    document.getElementById('api-key').value = savedKey;
+    document.getElementById('key-status').textContent = '✓ guardada';
+    document.getElementById('key-status').className = 'ok';
+    setStatus('connected');
+  }
+};
+
+function saveKey() {
+  const k = document.getElementById('api-key').value.trim();
+  if (!k) return;
+  savedKey = k;
+  localStorage.setItem('pcv001_sm_key', k);
+  document.getElementById('key-status').textContent = '✓ guardada';
+  document.getElementById('key-status').className = 'ok';
+  setStatus('connected');
+  showToast('✓ Key guardada');
+}
+
+function setStatus(s) {
+  const d = document.getElementById('sdot');
+  const t = document.getElementById('stext');
+  d.className = 'sdot' + (s === 'connected' ? ' on' : s === 'error' ? ' err' : '');
+  t.textContent = s === 'connected' ? 'Conectado' : s === 'error' ? 'Error de conexión' : 'Sin conectar';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 2200);
+}
+
+function useChip(el) {
+  document.getElementById('user-input').value = el.textContent;
+  sendMsg();
+}
+
+function clearChat() {
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  const e = document.createElement('div');
+  e.id = 'empty';
+  e.innerHTML = `
+    <div class="eicon">🧠</div>
+    <h2>Nueva conversación</h2>
+    <p>¿Qué quieres consultar de PCV001?</p>
+    <div class="chips">
+      <div class="chip" onclick="useChip(this)">¿En qué punto quedé con el KIT SaaS?</div>
+      <div class="chip" onclick="useChip(this)">¿Cómo resolví el error de openById?</div>
+      <div class="chip" onclick="useChip(this)">Dame el resumen ejecutivo de PCV001</div>
+      <div class="chip" onclick="useChip(this)">¿Qué errores tuve en la conciliación BBVA?</div>
+    </div>`;
+  msgs.appendChild(e);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+}
+
+function addMsg(role, html) {
+  document.getElementById('empty')?.remove();
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+
+  const av = document.createElement('div');
+  av.className = 'avatar ' + role;
+  av.textContent = role === 'user' ? 'TÚ' : 'SM';
+
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+
+  if (role === 'ai') {
+    const tag = document.createElement('div');
+    tag.className = 'wtag';
+    tag.textContent = 'Supermemory · PCV001';
+    bub.appendChild(tag);
+  }
+
+  const cnt = document.createElement('div');
+  cnt.innerHTML = html;
+  bub.appendChild(cnt);
+
+  div.appendChild(av);
+  div.appendChild(bub);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  document.getElementById('empty')?.remove();
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.id = 'typing-msg';
+  div.innerHTML = `
+    <div class="avatar ai">SM</div>
+    <div class="bubble">
+      <div class="wtag">Supermemory · PCV001</div>
+      <span class="tdots"><span></span><span></span><span></span></span>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function buildResultsHtml(results) {
+  if (!results || !results.length) {
+    return `<div class="no-results">No encontré información específica sobre eso en tus documentos de PCV001.<br><br>Prueba con otras palabras clave, por ejemplo: <em>KIT SaaS</em>, <em>openById</em>, <em>Inventario Drive</em>, <em>conciliación</em>, etc.</div>`;
+  }
+
+  let html = '';
+  results.slice(0, 4).forEach((r, i) => {
+    const content = (r.content || r.text || r.chunk || '').trim();
+    const source = r.document?.name || r.document?.title || r.source || r.title || '';
+    if (!content) return;
+
+    const preview = content.length > 700 ? content.substring(0, 700) + '...' : content;
+    const escaped = preview.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+
+    html += `
+      <div class="frag">
+        <div class="frag-title">Fragmento ${i + 1} de ${results.length}</div>
+        <div>${escaped}</div>
+        ${source ? `<div class="frag-source">📄 ${source}</div>` : ''}
+      </div>`;
+  });
+
+  if (results.length > 4) {
+    html += `<div style="font-size:15px;color:var(--text3);margin-top:8px;">Se encontraron ${results.length} fragmentos en total. Mostrando los 4 más relevantes.</div>`;
+  }
+
+  return html;
+}
+
+async function sendMsg() {
+  const key = document.getElementById('api-key').value.trim() || savedKey;
+  const input = document.getElementById('user-input');
+  const q = input.value.trim();
+  if (!q) return;
+
+  if (!key) {
+    addMsg('ai', '<div class="no-results">Necesitas pegar tu API key de Supermemory arriba y darle Guardar.</div>');
+    return;
+  }
+
+  document.getElementById('send-btn').disabled = true;
+  input.value = ''; input.style.height = 'auto';
+  addMsg('user', q.replace(/\n/g, '<br>'));
+  addTyping();
+
+  try {
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q, apiKey: key })
+    });
+
+    const data = await res.json();
+
+    document.getElementById('typing-msg')?.remove();
+
+    if (!res.ok) {
+      setStatus('error');
+      const msg = res.status === 401
+        ? 'Tu API key de Supermemory expiró o es inválida. Ve a console.supermemory.ai y crea una nueva key permanente.'
+        : `Error ${res.status}: ${data.error || 'Intenta de nuevo.'}`;
+      addMsg('ai', `<div class="no-results">❌ ${msg}</div>`);
+    } else {
+      setStatus('connected');
+      const results = data.results || data.data || [];
+      addMsg('ai', buildResultsHtml(results));
+    }
+
+  } catch (err) {
+    setStatus('error');
+    document.getElementById('typing-msg')?.remove();
+    addMsg('ai', `<div class="no-results">❌ Error de conexión: ${err.message}</div>`);
+  }
+
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('user-input').focus();
+}
+</script>
+</body>
+</html>
